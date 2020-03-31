@@ -1,6 +1,6 @@
 {
-    "name": "seanmorris/ids-project",
-    "description": "Project template for Ids projects.",
+    "name": "seanmorris/eventi",
+    "description": "Stream Events Everywhere.",
     "type": "project",
     "license": "Apache-2.0",
     "authors": [
