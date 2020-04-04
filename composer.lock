@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8526b8e57ee978379854f7c9a9fb3638",
+    "content-hash": "da85003743d597fb96a696cb391846aa",
     "packages": [
         {
             "name": "seanmorris/ids",
-            "version": "dev-master",
+            "version": "dev-sm-loader",
             "source": {
                 "type": "git",
                 "url": "https://github.com/seanmorris/ids.git",
-                "reference": "3dea9425fe26355e56882eaa0a339b713a1108e6"
+                "reference": "1174bb3ccb49a35e7195dd1133e3acb832fad7d0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/seanmorris/ids/zipball/3dea9425fe26355e56882eaa0a339b713a1108e6",
-                "reference": "3dea9425fe26355e56882eaa0a339b713a1108e6",
+                "url": "https://api.github.com/repos/seanmorris/ids/zipball/1174bb3ccb49a35e7195dd1133e3acb832fad7d0",
+                "reference": "1174bb3ccb49a35e7195dd1133e3acb832fad7d0",
                 "shasum": ""
             },
             "require-dev": {
@@ -40,7 +40,7 @@
                     "email": "sean@sean-morris.com"
                 }
             ],
-            "time": "2020-03-16T06:03:14+00:00"
+            "time": "2020-03-26T07:04:49+00:00"
         }
     ],
     "packages-dev": [
@@ -134,5 +134,6 @@
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": [],
-    "platform-dev": []
+    "platform-dev": [],
+    "plugin-api-version": "1.1.0"
 }

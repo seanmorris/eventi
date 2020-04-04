@@ -10,9 +10,14 @@
         }
     ],
     "require": {
-        "seanmorris/ids": "dev-master"
+        "seanmorris/ids": "dev-sm-loader"
     },
     "require-dev": {
 		"simpletest/simpletest": "dev-master"
+	},
+	"autoload" : {
+		"psr-4" : {
+			"SeanMorris\\Eventi\\" : "source/"
+		}
 	}
 }

@@ -2,6 +2,13 @@ version: '2.4'
 
 services:
 
+  centralconsumer:
+    depends_on: [database]
+    volumes: ["../../:/app", "/tmp:/tmp"]
+    extends:
+      file: base.yml
+      service: centralconsumer
+
   idilic:
     depends_on: [database]
     volumes: ["../../:/app", "/tmp:/tmp"]
@@ -28,6 +35,8 @@ services:
     extends:
       file: base.yml
       service: kafka
+    depends_on:
+      - zookeeper
 
   zookeeper:
     extends:
@@ -35,6 +44,8 @@ services:
       service: zookeeper
 
 volumes:
+  zoo:
+    driver: local
   firehose:
     driver: local
   schema:

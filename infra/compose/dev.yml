@@ -2,6 +2,13 @@ version: '2.4'
 
 services:
 
+  centralconsumer:
+    depends_on: [database]
+    volumes: ["../../:/app", "/tmp:/tmp"]
+    extends:
+      file: base.yml
+      service: centralconsumer
+
   idilic:
     extends:
       file: base.yml
@@ -28,5 +35,9 @@ services:
       service: database
 
 volumes:
+  zoo:
+    driver: local
+  firehose:
+    driver: local
   schema:
     driver: local

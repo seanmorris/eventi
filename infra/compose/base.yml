@@ -2,6 +2,28 @@ version: '2.4'
 
 services:
 
+  centralconsumer:
+    image:   ${REPO}/${PROJECT}.centralconsumer:${TAG}
+    user:    ${D_UID}:${D_GID}
+    restart: always
+    command: ['@SeanMorris\Eventi\Consumer::listen']
+    # command: ['@SeanMorris\Eventi\Consumer::listen']
+    env_file:
+      - ${MAIN_DLT}
+      - ${MAIN_ENV}
+      - ${TRGT_DLT}
+      - ${TRGT_ENV}
+    build:
+      context: ../../
+      dockerfile: ${ROOTRELDIR}infra/docker/centralconsumer.dockerfile
+      target:  centralconsumer-${TARGET}
+      network: bridge
+      args:
+        UID: ${D_UID}
+        GID: ${D_GID}
+        CORERELDIR: ${CORERELDIR}
+        ROOTRELDIR: ${ROOTRELDIR}
+
   server:
     build:
       context: ../../
@@ -20,15 +42,27 @@ services:
     extends:
       file: ../../vendor/seanmorris/ids/infra/compose/base.yml
       service: database
+    environment:
+      - MYSQL_RANDOM_ROOT_PASSWORD=yes
 
   kafka:
-    volumes: ['firehose:/bitnami/kafka']
-    image: 'bitnami/kafka:latest'
+    restart: always
+    volumes: [firehose:/bitnami]
+    image: bitnami/kafka:2
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
 
   zookeeper:
-    image: 'bitnami/zookeeper:latest'
+    restart: always
+    volumes: [zoo:/bitnami]
+    image: bitnami/zookeeper:3
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
 
 volumes:
+  zoo:
+    driver: local
   firehose:
     driver: local
   schema:
