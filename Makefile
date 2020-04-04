@@ -2,7 +2,7 @@
 .PHONY: init
 
 SHELL    = /bin/bash
-PROJECT  ?=project
+PROJECT  ?=eventi
 REPO     ?=repository
 
 -include .env

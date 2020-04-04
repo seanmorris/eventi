@@ -21,6 +21,15 @@ services:
       file: ../../vendor/seanmorris/ids/infra/compose/base.yml
       service: database
 
+  kafka:
+    volumes: ['firehose:/bitnami/kafka']
+    image: 'bitnami/kafka:latest'
+
+  zookeeper:
+    image: 'bitnami/zookeeper:latest'
+
 volumes:
+  firehose:
+    driver: local
   schema:
     driver: local

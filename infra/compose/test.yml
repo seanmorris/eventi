@@ -24,6 +24,18 @@ services:
       file: base.yml
       service: database
 
+  kafka:
+    extends:
+      file: base.yml
+      service: kafka
+
+  zookeeper:
+    extends:
+      file: base.yml
+      service: zookeeper
+
 volumes:
+  firehose:
+    driver: local
   schema:
     driver: local
