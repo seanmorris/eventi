@@ -6,7 +6,7 @@ services:
     image:   ${REPO}/${PROJECT}.centralconsumer:${TAG}
     user:    ${D_UID}:${D_GID}
     restart: always
-    command: ['@SeanMorris\Eventi\Consumer::listen']
+    command: ['@SeanMorris\Eventi\Consumer::emit', 'test']
     # command: ['@SeanMorris\Eventi\Consumer::listen']
     env_file:
       - ${MAIN_DLT}
@@ -24,6 +24,18 @@ services:
         CORERELDIR: ${CORERELDIR}
         ROOTRELDIR: ${ROOTRELDIR}
 
+  kayveeproducer:
+    image:   ${REPO}/${PROJECT}.centralconsumer:${TAG}
+    user:    ${D_UID}:${D_GID}
+    restart: always
+    command: ['@SeanMorris\Eventi\KayVeeProducer::emit', '2']
+    # command: ['@SeanMorris\Eventi\Consumer::listen']
+    env_file:
+      - ${MAIN_DLT}
+      - ${MAIN_ENV}
+      - ${TRGT_DLT}
+      - ${TRGT_ENV}
+
   server:
     build:
       context: ../../
@@ -32,6 +44,7 @@ services:
       service: server
 
   idilic:
+    image: ${REPO}/${PROJECT}.idilic:${TAG}
     build:
       context: ../../
     extends:

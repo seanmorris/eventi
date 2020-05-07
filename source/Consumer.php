@@ -3,7 +3,32 @@ namespace SeanMorris\Eventi;
 
 class Consumer
 {
-	public static function listen()
+	public static function emit($topic)
+	{
+		static::listen($topic, function($message){
+			switch ($message->err)
+			{
+				case RD_KAFKA_RESP_ERR_NO_ERROR:
+					// var_dump($message->payload);
+					var_dump($message->offset);
+					break;
+
+				case RD_KAFKA_RESP_ERR__PARTITION_EOF:
+					echo "No more messages; waiting...\n";
+					break;
+
+				case RD_KAFKA_RESP_ERR__TIMED_OUT:
+					echo "Timed out\n";
+					break;
+
+				default:
+					throw new \Exception($message->errstr(), $message->err);
+					break;
+			}
+		});
+	}
+
+	public static function listen($topic, $callback)
 	{
 		$conf = new \RdKafka\Conf();
 
@@ -18,7 +43,7 @@ class Consumer
 
 		$consumer = new \RdKafka\KafkaConsumer($conf);
 
-		$consumer->subscribe(['test']);
+		$consumer->subscribe([$topic]);
 
 		echo "Waiting for partition assignment... (make take some time when\n";
 		echo "quickly re-joining the group after leaving it.)\n";
@@ -27,36 +52,18 @@ class Consumer
 		{
 			$message = $consumer->consume(120*1000);
 
+			$callback($message);
+
 			// $consumer->commit($message);
-
-			switch ($message->err)
-			{
-				case RD_KAFKA_RESP_ERR_NO_ERROR:
-					// var_dump($message->payload);
-					var_dump($message->offset);
-					break;
-
-				case RD_KAFKA_RESP_ERR__PARTITION_EOF:
-					echo "No more messages; waiting...\n";
-            		break;
-
-				case RD_KAFKA_RESP_ERR__TIMED_OUT:
-					echo "Timed out\n";
-					break;
-
-				default:
-					throw new \Exception($message->errstr(), $message->err);
-					break;
-			}
 		}
 	}
 
 	public static function rebalance(
 		\RdKafka\KafkaConsumer $kafka
-		, $err = NULL
+		, $error = NULL
 		, array $partitions = NULL
 	){
-		switch ($err)
+		switch ($error)
 		{
 			case RD_KAFKA_RESP_ERR__ASSIGN_PARTITIONS:
 				echo "Assign: ";
@@ -71,7 +78,7 @@ class Consumer
 				break;
 
 			default:
-				throw new \Exception($err);
+				throw new \Exception($error);
 	    }
 	}
 }

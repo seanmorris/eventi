@@ -9,6 +9,13 @@ services:
       file: base.yml
       service: centralconsumer
 
+  kayveeproducer:
+    depends_on: [database]
+    volumes: ['${OUTROOTDIR}:/app', "/tmp:/tmp"]
+    extends:
+      file: base.yml
+      service: kayveeproducer
+
   idilic:
     depends_on: [database]
     volumes: ['${OUTROOTDIR}:/app']

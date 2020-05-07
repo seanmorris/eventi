@@ -32,7 +32,7 @@ $response = $router->route();
 $debug = ob_get_contents();
 ob_end_clean();
 
-if($response instanceof Traversable)
+if($response instanceof Traversable || is_array($response))
 {
 	foreach($response as $chunk)
 	{

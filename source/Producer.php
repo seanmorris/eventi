@@ -3,7 +3,17 @@ namespace SeanMorris\Eventi;
 
 class Producer
 {
-	public static function produce()
+	public static function emit($i)
+	{
+		while(TRUE)
+		{
+			static::produce($i);
+
+			usleep(1 * 1000 * 1500);
+		}
+	}
+
+	public static function produce($i)
 	{
 		$conf = new \RdKafka\Conf();
 
@@ -30,7 +40,14 @@ class Producer
 				, 'Message payload: ' . microtime(true)
 			);
 
-			if($x++ >= 5)
+			$x++;
+
+			if($i <= 0)
+			{
+				break;
+			}
+
+			if($i > 0 && $x >= $i)
 			{
 				$producer->flush(500);
 				$x = 0;
