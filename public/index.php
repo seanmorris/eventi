@@ -32,7 +32,18 @@ $response = $router->route();
 $debug = ob_get_contents();
 ob_end_clean();
 
-print $response;
+if($response instanceof Traversable)
+{
+	foreach($response as $chunk)
+	{
+		echo $chunk;
+	}
+}
+else
+{
+	print $response;
+}
+
 
 if(Settings::read('devmode') && $debug)
 {

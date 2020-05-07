@@ -1,0 +1,24 @@
+{
+  "name": "eventi-frontend",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "curvature": "^0.0.48"
+  },
+  "devDependencies": {
+    "auto-reload-brunch": "^2",
+    "babel-brunch": "^6.1.1",
+    "babel-preset-es2015": "^6",
+    "brunch-preval": "^0.0.0",
+    "brunch": "^2.10.17",
+    "clean-css-brunch": "^2",
+    "raw-brunch": "^1.0.2",
+    "uglify-es-brunch": "^1"
+  }
+}

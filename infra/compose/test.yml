@@ -4,29 +4,29 @@ services:
 
   centralconsumer:
     depends_on: [database]
-    volumes: ["../../:/app", "/tmp:/tmp"]
+    volumes: ['${OUTROOTDIR}:/app', "/tmp:/tmp"]
     extends:
       file: base.yml
       service: centralconsumer
 
   idilic:
     depends_on: [database]
-    volumes: ["../../:/app", "/tmp:/tmp"]
+    volumes: ['${OUTROOTDIR}:/app']
     extends:
       file: base.yml
       service: idilic
 
   server:
-    ports: ['${IDS_EXPOSE_HTTP}:80']
-    depends_on: [database]
-    volumes: ["../../:/app", "/tmp:/tmp"]
+    volumes: ['${OUTROOTDIR}:/app']
+    ports: ['${IDS_EXPOSE_HTTP-0}:8080']
+    build:
+      context: ../../
     extends:
       file: base.yml
       service: server
 
   database:
-    ports: ['${IDS_EXPOSE_SQL}:${IDS_DATABASES_MAIN_PORT}']
-    volumes: ["../../:/app", "/tmp:/tmp"]
+    ports: ['${IDS_EXPOSE_SQL-0}:${IDS_DATABASES_MAIN_PORT}']
     extends:
       file: base.yml
       service: database
@@ -42,6 +42,11 @@ services:
     extends:
       file: base.yml
       service: zookeeper
+
+  brunch:
+    extends:
+      file: base.yml
+      service: brunch
 
 volumes:
   zoo:

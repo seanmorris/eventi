@@ -60,6 +60,28 @@ services:
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
 
+  brunch:
+    build:
+      context: ../../
+      dockerfile: ${ROOTRELDIR}infra/docker/brunch.dockerfile
+      target: ${TARGET}
+      args:
+        TARGET: ${TARGET}
+    image: ${REPO}/${PROJECT}.brunch:${TAG}
+    restart: always
+    ports:
+      - "9485:9485"
+    volumes:
+      - ../../:/app
+    environment:
+      TAG: ${TAG}
+      TARGET: ${TARGET}
+    env_file:
+      - ${MAIN_DLT}
+      - ${MAIN_ENV}
+      - ${TRGT_DLT}
+      - ${TRGT_ENV}
+
 volumes:
   zoo:
     driver: local
