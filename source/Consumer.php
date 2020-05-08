@@ -72,14 +72,12 @@ class Consumer
 		switch ($error)
 		{
 			case RD_KAFKA_RESP_ERR__ASSIGN_PARTITIONS:
-				echo "Assign: ";
-				var_dump($partitions);
+				\SeanMorris\Ids\Log::debug('Assign: ', $partitions);
 				$kafka->assign($partitions);
 				break;
 
 			case RD_KAFKA_RESP_ERR__REVOKE_PARTITIONS:
-				echo "Revoke: ";
-				var_dump($partitions);
+				\SeanMorris\Ids\Log::debug('Revoke: ', $partitions);
 				$kafka->assign(NULL);
 				break;
 

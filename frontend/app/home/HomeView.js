@@ -29,4 +29,9 @@ export class HomeView extends View {
 
 		this.eventSource.onerror = error => console.error(error);
 	}
+
+	send()
+	{
+		fetch('/send', {method: 'post'});
+	}
 };

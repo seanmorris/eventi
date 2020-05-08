@@ -19,6 +19,32 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 		return range(0,1);
 	}
 
+	public function send($router)
+	{
+		if($router->request()->method() !== 'POST')
+		{
+			return;
+		}
+
+		$conf = new \RdKafka\Conf();
+
+		$conf->set('metadata.broker.list', 'kafka:9092');
+
+		$producer = new \RdKafka\Producer($conf);
+		$topic    = $producer->newTopic("test");
+		$message  = sprintf('User generaged message @ %0.4f', microtime(true));
+
+		$topic->produce(
+			RD_KAFKA_PARTITION_UA
+			, 0
+			, $message
+		);
+
+		$producer->flush(500);
+
+		return $message;
+	}
+
 	public function events($router)
 	{
 		header('Cache-Control: no-cache');
@@ -36,7 +62,7 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 
 			while(TRUE)
 			{
-				\SeanMorris\Ids\Log::error('tick...', connection_aborted());
+				\SeanMorris\Ids\Log::debug('tick...', connection_aborted());
 
 				if(connection_aborted())
 				{
@@ -52,10 +78,7 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 
 					ob_start();
 
-					yield new Event(
-						$event->payload,
-						$event->offset
-					);
+					yield new Event($event->payload, $event->offset);
 
 					while(ob_get_level())
 					{

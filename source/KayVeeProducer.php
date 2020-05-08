@@ -6,12 +6,12 @@ class KayVeeProducer extends Producer
 
 	public static function message($topic)
 	{
-		echo 'Message payload: ' . microtime(true) . "\n";
+		\SeanMorris\Ids\Log::debug('Message payload: ' . microtime(true) . "\n");
 
 		$topic->produce(
 			RD_KAFKA_PARTITION_UA
 			, 0
-			, 'Message payload: ' . microtime(true)
+			, sprintf('%0.4f', microtime(true))
 			, time() % 10
 		);
 	}

@@ -3,13 +3,13 @@ namespace SeanMorris\Eventi;
 
 class Producer
 {
-	public static function emit($i)
+	public static function emit($i, $j)
 	{
 		while(TRUE)
 		{
 			static::produce($i);
 
-			usleep(1 * 1000 * 50);
+			usleep(1 * 1000 * $j);
 		}
 	}
 
@@ -28,16 +28,12 @@ class Producer
 
 		$x = 0;
 
-		echo "Sending...\n";
-
 		while(TRUE)
 		{
-			echo 'Message payload: ' . microtime(true) . "\n";
-
 			$topic->produce(
 				RD_KAFKA_PARTITION_UA
 				, 0
-				, 'Message payload: ' . microtime(true)
+				, sprintf('%0.4f', microtime(true))
 			);
 
 			$x++;
