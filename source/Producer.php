@@ -9,7 +9,7 @@ class Producer
 		{
 			static::produce($i);
 
-			usleep(1 * 1000 * 1500);
+			usleep(1 * 1000 * 50);
 		}
 	}
 

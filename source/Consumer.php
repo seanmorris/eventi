@@ -3,32 +3,32 @@ namespace SeanMorris\Eventi;
 
 class Consumer
 {
-	public static function emit($topic)
+	public static function emit($topic, $groupId)
 	{
-		static::listen($topic, function($message){
+		static::listen($topic, $groupId, function($message){
 			switch ($message->err)
 			{
 				case RD_KAFKA_RESP_ERR_NO_ERROR:
-					// var_dump($message->payload);
-					var_dump($message->offset);
+					\SeanMorris\Ids\Log::debug($message);
 					break;
 
 				case RD_KAFKA_RESP_ERR__PARTITION_EOF:
-					echo "No more messages; waiting...\n";
+					\SeanMorris\Ids\Log::debug('No more messages; waiting...');
 					break;
 
 				case RD_KAFKA_RESP_ERR__TIMED_OUT:
-					echo "Timed out\n";
+					\SeanMorris\Ids\Log::debug('Timed out.');
 					break;
 
 				default:
+					\SeanMorris\Ids\Log::warn($message);
 					throw new \Exception($message->errstr(), $message->err);
 					break;
 			}
 		});
 	}
 
-	public static function wait($topic)
+	public static function wait($topic, $groupId)
 	{
 		static $conf, $consumer;
 
@@ -36,7 +36,7 @@ class Consumer
 		{
 			$conf = new \RdKafka\Conf();
 
-			$conf->set('group.id',             'test-group');
+			$conf->set('group.id',             $groupId);
 			$conf->set('metadata.broker.list', 'kafka:9092');
 			$conf->set('auto.offset.reset',    'smallest');
 
@@ -54,11 +54,11 @@ class Consumer
 		// $consumer->commit($message);
 	}
 
-	public static function listen($topic, $callback)
+	public static function listen($topic, $groupId, $callback)
 	{
 		while (true)
 		{
-			$message = static::wait($topic);
+			$message = static::wait($topic, $groupId);
 
 			$callback($message);
 		}

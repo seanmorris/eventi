@@ -43,8 +43,13 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 					break;
 				}
 
-				while($event = KayVeeConsumer::wait('test'))
+				while($event = KayVeeConsumer::wait('test', 'web-test-group'))
 				{
+					if($event->payload === 'Broker: No more messages')
+					{
+						continue;
+					}
+
 					ob_start();
 
 					yield new Event(
@@ -59,7 +64,7 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 					}
 				}
 
-				usleep(1 * 1000 * 1000);
+				// usleep(1 * 1000 * 1000);
 			}
 		});
 	}

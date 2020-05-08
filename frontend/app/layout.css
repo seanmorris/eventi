@@ -1,7 +1,18 @@
+html {
+	padding: 1em;
+}
+
 body {
 	display: flex;
 	flex-direction: column;
 
+	font-family: monospace;
+
 	/*justify-content: center;
 	align-items: center;*/
+}
+
+
+ol li:nth-child(n+26) {
+	display: none;
 }
