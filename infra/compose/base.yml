@@ -38,15 +38,19 @@ services:
 
   server:
     build:
-      context: ../../
+      context:    ../../
+      dockerfile: ${ROOTRELDIR}infra/docker/server.___gen.dockerfile
+      target:     eventi-server-${TARGET}
     extends:
       file: ../../${CORERELDIR}infra/compose/base.yml
       service: server
 
   idilic:
-    image: ${REPO}/${PROJECT}.idilic:${TAG}
+    image:  ${REPO}/${PROJECT}.idilic:${TAG}
     build:
-      context: ../../
+      context:    ../../
+      dockerfile: ${ROOTRELDIR}infra/docker/idilic.___gen.dockerfile
+      target:     eventi-idilic-${TARGET}
     extends:
       file: ../../${CORERELDIR}infra/compose/base.yml
       service: idilic
@@ -60,7 +64,7 @@ services:
 
   kafka:
     restart: always
-    volumes: [firehose:/bitnami]
+    volumes: ['firehose:/bitnami']
     image: bitnami/kafka:2
     environment:
       - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
@@ -68,7 +72,7 @@ services:
 
   zookeeper:
     restart: always
-    volumes: [zoo:/bitnami]
+    volumes: ['zoo:/bitnami']
     image: bitnami/zookeeper:3
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes

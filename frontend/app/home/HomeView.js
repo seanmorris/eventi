@@ -18,9 +18,12 @@ export class HomeView extends View {
 				const data = JSON.parse(event.data);
 				const id   = event.lastEventId;
 
-
 				this.args.events.push({data, id});
 
+				while(this.args.events.length > 25)
+				{
+					this.args.events.shift();
+				}
 			}
 		);
 

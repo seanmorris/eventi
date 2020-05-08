@@ -24,19 +24,15 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 		header('Cache-Control: no-cache');
 		header('Content-Type: text/event-stream');
 
+		while(ob_get_level())
+		{
+			ob_end_flush();
+			flush();
+		}
+
 		$events = [];
 
-		KayVeeConsumer::listen('test', function($event) use($events) {
-
-			array_push($events);
-
-		});
-
 		return new EventSource(function() use($events) {
-
-			$messages = rand(5, 15);
-
-			$id = NULL;
 
 			while(TRUE)
 			{
@@ -47,20 +43,13 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 					break;
 				}
 
-
-				// $id = sprintf(
-				// 	'%0.6f-%s'
-				// 	, microtime(true)
-				// 	, uniqid()
-				// );
-
-				if($events)
+				while($event = KayVeeConsumer::wait('test'))
 				{
 					ob_start();
 
 					yield new Event(
-						$message->payload,
-						$message->offset
+						$event->payload,
+						$event->offset
 					);
 
 					while(ob_get_level())
@@ -69,9 +58,6 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 						flush();
 					}
 				}
-
-				// yield new Event('Ping!!!', $id);
-
 
 				usleep(1 * 1000 * 1000);
 			}

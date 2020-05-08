@@ -1,8 +1,3 @@
-ARG BASE
-
-FROM ${BASE} as base
-MAINTAINER Sean Morris <sean@seanmorr.is>
-
 RUN set -eux;   \
 	apt update; \
 	apt install --no-install-recommends -y librdkafka-dev wget php7.3-dev make; \
@@ -22,10 +17,4 @@ RUN set -eux;   \
 	make; \
 	make install;
 
-COPY ${CORERELDIR}/infra/php/30-rdkafka.ini /etc/php/7.3/cli/conf.d/30-rdkafka.ini
-COPY ${CORERELDIR}/infra/php/30-redis.ini /etc/php/7.3/cli/conf.d/30-redis.ini
-
-FROM base AS server-base
-FROM server-base AS server-test
-FROM server-base AS server-dev
-FROM server-base AS server-prod
+COPY $${ROOTRELDIR}infra/php/30-rdkafka.ini /etc/php/7.3/cli/conf.d/30-rdkafka.ini

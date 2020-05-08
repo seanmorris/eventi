@@ -28,33 +28,39 @@ class Consumer
 		});
 	}
 
+	public static function wait($topic)
+	{
+		static $conf, $consumer;
+
+		if(!$conf)
+		{
+			$conf = new \RdKafka\Conf();
+
+			$conf->set('group.id',             'test-group');
+			$conf->set('metadata.broker.list', 'kafka:9092');
+			$conf->set('auto.offset.reset',    'smallest');
+
+			$conf->setRebalanceCb([static::class, 'rebalance']);
+
+			// $conf->set('log_level', (string) LOG_DEBUG);
+			// $conf->set('debug', 'all');
+
+			$consumer = new \RdKafka\KafkaConsumer($conf);
+
+			$consumer->subscribe([$topic]);
+		}
+
+		return $consumer->consume(120*1000);
+		// $consumer->commit($message);
+	}
+
 	public static function listen($topic, $callback)
 	{
-		$conf = new \RdKafka\Conf();
-
-		$conf->set('group.id',             'test-group');
-		$conf->set('metadata.broker.list', 'kafka:9092');
-		$conf->set('auto.offset.reset',    'smallest');
-
-		$conf->setRebalanceCb([static::class, 'rebalance']);
-
-		// $conf->set('log_level', (string) LOG_DEBUG);
-		// $conf->set('debug', 'all');
-
-		$consumer = new \RdKafka\KafkaConsumer($conf);
-
-		$consumer->subscribe([$topic]);
-
-		echo "Waiting for partition assignment... (make take some time when\n";
-		echo "quickly re-joining the group after leaving it.)\n";
-
 		while (true)
 		{
-			$message = $consumer->consume(120*1000);
+			$message = static::wait($topic);
 
 			$callback($message);
-
-			// $consumer->commit($message);
 		}
 	}
 

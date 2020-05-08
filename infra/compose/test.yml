@@ -24,10 +24,9 @@ services:
       service: idilic
 
   server:
+    depends_on: [database]
     volumes: ['${OUTROOTDIR}:/app']
     ports: ['${IDS_EXPOSE_HTTP-0}:8080']
-    build:
-      context: ../../
     extends:
       file: base.yml
       service: server
