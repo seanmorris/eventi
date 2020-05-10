@@ -10,7 +10,8 @@ export class HomeView extends View {
 		this.template = require('./homeView.tmp');
 		this.database = null;
 
-		this.args.events = [];
+		this.args.selected = [];
+		this.args.events   = [];
 
 
 		Database.open('event-log').then(database =>  {
@@ -64,21 +65,90 @@ export class HomeView extends View {
 		Database.open('event-log').then(database => {
 
 			const selector = database.select({
-				store:       'event-log'
+				store:       ['event-log']
 				, index:     'created'
 				, direction: 'prev'
-				, limit:     2
-				, offset:    0
+				, limit:     25
+				, offset:    1
+			});
+
+			this.args.selected = [];
+
+			return selector.each(entry => {
+
+				this.args.selected.push(entry);
+
+				while(this.args.selected.length > 25)
+				{
+					this.args.selected.shift();
+				}
+
+			});
+
+		}).catch(error => {
+
+			console.error(error)
+
+		});
+	}
+
+	editEven()
+	{
+		Database.open('event-log').then(database => {
+
+			const selector = database.select({
+				store:       ['event-log']
+				, index:     'created'
+				, direction: 'prev'
+				, limit:     500
 			});
 
 			return selector.each(entry => {
 
-				selector.each(entryB => {
-					console.log( entry.created, entry.body, entry == entryB );
-				});
+				console.log(Math.floor(entry.created) % 2);
+
+				if(Math.floor(entry.created) % 2 === 0)
+				{
+					entry.edited || (entry.body += '..');
+					entry.edited = true;
+				}
+
+				return database.update(entry);
+
+			}).then(results => {
+
+				return Promise.all(Object.values(results));
 
 			});
 
-		}).catch(error => console.error(error));
+		}).catch(error => {
+
+			console.error(error)
+
+		});
+	}
+
+	deleteOdd()
+	{
+		Database.open('event-log').then(database => {
+
+			const selector = database.select({
+				store:       ['event-log']
+				, index:     'created'
+				, direction: 'prev'
+				, limit:     500
+			});
+
+			return selector.each(entry => {
+
+				return database.delete(entry);
+
+			});
+
+		}).catch(error => {
+
+			console.error(error);
+
+		});
 	}
 };

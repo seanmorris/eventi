@@ -1,6 +1,7 @@
 const PrimaryKey = Symbol('PrimaryKey');
 
-const Each = Symbol('each');
+const Store = Symbol('Store');
+const Fetch = Symbol('Each');
 
 export class Database
 {
@@ -12,13 +13,13 @@ export class Database
 
 	select({store, index, direction = 'next', limit = 0, offset = 0})
 	{
-		const t = this.connection.transaction([store], "readonly");
+		const t = this.connection.transaction(store, "readonly");
 		const s = t.objectStore(store);
 		const i = s.index(index);
 
 		return {
-			each:  this[Each](i, direction, limit, offset)
-			, one: this[Each](i, direction, 1, offset)
+			each:  this[Fetch](i, direction, limit, offset)
+			, one: this[Fetch](i, direction, 1, offset)
 		};
 	}
 
@@ -29,6 +30,46 @@ export class Database
 			const store = trans.objectStore(storeName);
 
 			const request = store.add(record);
+
+			request.onsuccess = database => accept(database);
+			request.onerror   = error    => reject(error);
+		});
+	}
+
+	update(record)
+	{
+		if(!record[PrimaryKey])
+		{
+			throw Error('Value provided is not a DB record!');
+		}
+
+		const storeName = record[Store];
+
+		return new Promise((accept, reject) => {
+			const trans = this.connection.transaction([storeName], "readwrite");
+			const store = trans.objectStore(storeName);
+
+			const request = store.put(record);
+
+			request.onsuccess = database => accept(database);
+			request.onerror   = error    => reject(error);
+		});
+	}
+
+	delete(record)
+	{
+		if(!record[PrimaryKey])
+		{
+			throw Error('Value provided is not a DB record!');
+		}
+
+		const storeName = record[Store];
+
+		return new Promise((accept, reject) => {
+			const trans = this.connection.transaction([storeName], "readwrite");
+			const store = trans.objectStore(storeName);
+
+			const request = store.delete(record[PrimaryKey].description);
 
 			request.onsuccess = database => accept(database);
 			request.onerror   = error    => reject(error);
@@ -77,7 +118,7 @@ export class Database
 
 	static _version_0(){}
 
-	[Each](index, direction, limit, offset)
+	[Fetch](index, direction, limit, offset)
 	{
 		return callback => {
 
@@ -113,8 +154,9 @@ export class Database
 						this.bank[cursor.source.name] = new WeakMap;
 					}
 
-					const bank = this.bank[cursor.source.name];
-					const pk   = cursor.primaryKey;
+					const source = cursor.source;
+					const bank   = this.bank[source.name];
+					const pk     = cursor.primaryKey;
 
 					let value  = cursor.value;
 
@@ -125,6 +167,7 @@ export class Database
 					else
 					{
 						value[PrimaryKey] = Symbol.for(pk);
+						value[Store]      = source.objectStore.name;
 
 						bank[pk] = value;
 					}

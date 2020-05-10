@@ -1,9 +1,15 @@
 <h1>Welcome to Eventi!</h1>
-<div class = "controls">
+<p class = "controls">
 	<button cv-on = "click:send">generate event</button>
 	<button cv-on = "click:loadLog">select events from log</button>
-</div>
-<p>Events:</p>
-<ol cv-each = "events:event:e">
-	<li>[[e]] [[event.id]] @ [[event.created]] : [[event.body]]</li>
-</ol>
+	<button cv-on = "click:editEven">Edit events on even seconds</button>
+	<button cv-on = "click:deleteOdd">Delete last 500 events</button>
+</p>
+<p>Selected Events:</p>
+<ul cv-each = "selected:event:e">
+	<li>[[event.id]] @ [[event.created]] : [[event.body]]</li>
+</ul>
+<p>Streaming Events:</p>
+<ul class = "streaming" cv-each = "events:event:e">
+	<li>[[event.id]] @ [[event.created]] : [[event.body]]</li>
+</ul>

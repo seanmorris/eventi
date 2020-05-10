@@ -27,7 +27,7 @@ services:
     image:   ${REPO}/${PROJECT}.centralconsumer:${TAG}
     user:    ${D_UID}:${D_GID}
     restart: always
-    command: ['@SeanMorris\Eventi\KayVeeProducer::emit', '1', '1000']
+    command: ['@SeanMorris\Eventi\KayVeeProducer::emit', '1', '16']
     env_file:
       - ${MAIN_DLT}
       - ${MAIN_ENV}
