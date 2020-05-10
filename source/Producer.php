@@ -30,11 +30,13 @@ class Producer
 
 		while(TRUE)
 		{
-			$topic->produce(
-				RD_KAFKA_PARTITION_UA
-				, 0
-				, sprintf('%0.4f', microtime(true))
-			);
+			$message = json_encode((object)[
+				'id'        => uuid_create()
+				, 'created' => sprintf('%0.8f', microtime(true))
+				, 'body'    => sprintf('Server generated message.')
+			]);
+
+			$topic->produce(RD_KAFKA_PARTITION_UA, 0, $message);
 
 			$x++;
 

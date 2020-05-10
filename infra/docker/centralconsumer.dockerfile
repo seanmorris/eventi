@@ -3,7 +3,7 @@ MAINTAINER Sean Morris <sean@seanmorr.is>
 
 RUN set -eux;   \
 	apt update; \
-	apt install --no-install-recommends -y librdkafka-dev wget php7.3-dev make; \
+	apt install --no-install-recommends -y librdkafka-dev wget php7.3-dev make php7.3-uuid; \
 	wget https://github.com/arnaud-lb/php-rdkafka/archive/4.0.3.tar.gz; \
 	tar xzvf 4.0.3.tar.gz; \
 	cd php-rdkafka-4.0.3/; \

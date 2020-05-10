@@ -4,4 +4,5 @@ FROM server-${TARGET} AS eventi-server-${TARGET}
 
 $(call TEMPLATE_SHELL, cat infra/docker/php-rdkafka.dockerfragment)
 
-COPY $${ROOTRELDIR}infra/php/30-redis.ini /etc/php/7.3/cli/conf.d/30-redis.ini
+COPY $${ROOTRELDIR}infra/php/30-redis.ini /etc/php/${PHP}/cli/conf.d/30-redis.ini
+

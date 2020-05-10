@@ -2,23 +2,6 @@
 namespace SeanMorris\Eventi;
 class HomeRoute implements \SeanMorris\Ids\Routable
 {
-	public function rangetest()
-	{
-		$it = new \MultipleIterator(\MultipleIterator::MIT_NEED_ANY);
-
-		$it->attachIterator(new \ArrayIterator(range(0,100)));
-		$it->attachIterator(new \ArrayIterator(range(0,10)));
-		$it->attachIterator(new \ArrayIterator(array_fill(50,10,10)));
-		$it->attachIterator(new \ArrayIterator(range(0,100)));
-
-		foreach($it as $k => $v)
-		{
-			var_dump($k, $v, '=================');
-		}
-
-		return range(0,1);
-	}
-
 	public function send($router)
 	{
 		if($router->request()->method() !== 'POST')
@@ -32,13 +15,14 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 
 		$producer = new \RdKafka\Producer($conf);
 		$topic    = $producer->newTopic("test");
-		$message  = sprintf('User generaged message @ %0.4f', microtime(true));
 
-		$topic->produce(
-			RD_KAFKA_PARTITION_UA
-			, 0
-			, $message
-		);
+		$message  = json_encode((object)[
+			'id'        => uuid_create()
+			, 'created' => sprintf('%0.8f', microtime(true))
+			, 'body'    => 'User generaged message.'
+		]);
+
+		$topic->produce(RD_KAFKA_PARTITION_UA, 0, $message);
 
 		$producer->flush(500);
 
@@ -90,5 +74,10 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 				// usleep(1 * 1000 * 1000);
 			}
 		});
+	}
+
+	public function _notFound($router)
+	{
+		return 'Not found.';
 	}
 }

@@ -7,7 +7,6 @@ services:
     user:    ${D_UID}:${D_GID}
     restart: always
     command: ['@SeanMorris\Eventi\Consumer::emit', 'test', 'cli-test-group']
-    # command: ['@SeanMorris\Eventi\Consumer::listen']
     env_file:
       - ${MAIN_DLT}
       - ${MAIN_ENV}
@@ -28,8 +27,7 @@ services:
     image:   ${REPO}/${PROJECT}.centralconsumer:${TAG}
     user:    ${D_UID}:${D_GID}
     restart: always
-    command: ['@SeanMorris\Eventi\KayVeeProducer::emit', '3', '16']
-    # command: ['@SeanMorris\Eventi\Consumer::listen']
+    command: ['@SeanMorris\Eventi\KayVeeProducer::emit', '1', '1000']
     env_file:
       - ${MAIN_DLT}
       - ${MAIN_ENV}

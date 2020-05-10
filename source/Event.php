@@ -24,7 +24,7 @@ class Event
 		return sprintf(
 			$format
 			, 'ServerEvent'
-			, json_encode($this->message)
+			, $this->message
 			, $this->id
 		);
 	}

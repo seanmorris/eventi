@@ -1,6 +1,9 @@
 <h1>Welcome to Eventi!</h1>
-<button cv-on = "click:send">generate event</button>
+<div class = "controls">
+	<button cv-on = "click:send">generate event</button>
+	<button cv-on = "click:loadLog">select events from log</button>
+</div>
 <p>Events:</p>
 <ol cv-each = "events:event:e">
-	<li>[[event.data]] @ [[event.id]]</li>
+	<li>[[e]] [[event.id]] @ [[event.created]] : [[event.body]]</li>
 </ol>
