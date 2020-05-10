@@ -1,7 +1,8 @@
 import { View } from 'curvature/base/View';
 import { Database } from '../Database';
 
-export class HomeView extends View {
+export class HomeView extends View
+{
 	constructor()
 	{
 		super();
@@ -14,23 +15,25 @@ export class HomeView extends View {
 		this.args.events   = [];
 
 
-		Database.open('event-log').then(database =>  {
+		Database.open('event-log', 1).then(database =>  {
 
 			const insertor = database.insert('event-log');
 
-			this.listenForEvents(event => {
+			return this.listenForEvents(event => {
 
 				const message = this.parseMessage(event);
+				const entry   = message.data;
 
-				insertor(message.data);
+				return insertor(entry).then(entry => {
 
-				this.args.events.push(message.data);
+					this.args.events.push(entry);
 
-				while(this.args.events.length > 25)
-				{
-					this.args.events.shift();
-				}
+					while(this.args.events.length > 25)
+					{
+						this.args.events.shift();
+					}
 
+				});
 			});
 
 		}).catch( error => console.error(error) );
@@ -62,7 +65,7 @@ export class HomeView extends View {
 
 	loadLog()
 	{
-		Database.open('event-log').then(database => {
+		Database.open('event-log', 1).then(database => {
 
 			const selector = database.select({
 				store:       ['event-log']
@@ -78,38 +81,38 @@ export class HomeView extends View {
 
 				this.args.selected.push(entry);
 
-				while(this.args.selected.length > 25)
-				{
-					this.args.selected.shift();
-				}
+				return entry;
+
+			}).then(results => {
+
+				// console.log(results);
 
 			});
 
 		}).catch(error => {
 
-			console.error(error)
+			console.error(error);
 
 		});
 	}
 
 	editEven()
 	{
-		Database.open('event-log').then(database => {
+		Database.open('event-log', 1).then(database => {
 
 			const selector = database.select({
 				store:       ['event-log']
 				, index:     'created'
 				, direction: 'prev'
-				, limit:     500
+				, limit:     50
 			});
 
 			return selector.each(entry => {
 
-				console.log(Math.floor(entry.created) % 2);
+				entry.body = '!!!';
 
-				if(Math.floor(entry.created) % 2 === 0)
+				if(!entry.edited && Math.floor(entry.created) % 2 === 0)
 				{
-					entry.edited || (entry.body += '..');
 					entry.edited = true;
 				}
 
@@ -123,14 +126,14 @@ export class HomeView extends View {
 
 		}).catch(error => {
 
-			console.error(error)
+			console.error(error);
 
 		});
 	}
 
-	deleteOdd()
+	deleteLast500()
 	{
-		Database.open('event-log').then(database => {
+		Database.open('event-log', 1).then(database => {
 
 			const selector = database.select({
 				store:       ['event-log']
