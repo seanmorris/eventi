@@ -9,44 +9,31 @@ export class HomeView extends View
 
 		this.routes   = {};
 		this.template = require('./homeView.tmp');
-		this.database = null;
 
 		this.args.selected = [];
 		this.args.events   = [];
 
+		Database.open('event-log', 1).then(database => {
+			const worker = new Worker('worker.js');
 
-		Database.open('event-log', 1).then(database =>  {
+			worker.addEventListener('message', event => {
+				if(event.data.subType == 'insert')
+				{
+					const store = event.data.store;
+					const range = IDBKeyRange.only(event.data.key);
 
-			const insertor = database.insert('event-log');
+					database.select({store, range}).one(entry => {
 
-			return this.listenForEvents(event => {
+						this.args.events.push(entry);
 
-				const message = this.parseMessage(event);
-				const entry   = message.data;
-
-				return insertor(entry).then(entry => {
-
-					this.args.events.push(entry);
-
-					while(this.args.events.length > 25)
-					{
-						this.args.events.shift();
-					}
-
-				});
+						while(this.args.events.length > 25)
+						{
+							this.args.events.shift();
+						}
+					});
+				}
 			});
-
-		}).catch( error => console.error(error) );
-	}
-
-	parseMessage(event)
-	{
-		const message = JSON.parse(event.data);
-
-		return {
-			data: message
-			, id: event.lastEventId
-		};
+		});
 	}
 
 	send()
@@ -54,104 +41,59 @@ export class HomeView extends View
 		return fetch('/send', {method: 'post'});
 	}
 
-	listenForEvents(c)
-	{
-		this.eventSource = new EventSource('/events');
-
-		this.eventSource.addEventListener('ServerEvent', e => c(e));
-
-		this.eventSource.onerror = error => console.error(error);
-	}
-
 	loadLog()
 	{
 		Database.open('event-log', 1).then(database => {
+			this.args.selected.splice(0, this.args.selected.length);
 
-			const selector = database.select({
+			const select = database.select({
 				store:       ['event-log']
 				, index:     'created'
 				, direction: 'prev'
 				, limit:     25
-				, offset:    1
 			});
 
-			this.args.selected = [];
-
-			return selector.each(entry => {
-
-				this.args.selected.push(entry);
-
-				return entry;
-
-			}).then(results => {
-
-				// console.log(results);
-
-			});
-
-		}).catch(error => {
-
-			console.error(error);
-
-		});
+			return select.each(entry => this.args.selected.push(entry));
+		}).catch(error => console.error(error))
 	}
 
 	editEven()
 	{
 		Database.open('event-log', 1).then(database => {
-
-			const selector = database.select({
+			const select = database.select({
 				store:       ['event-log']
 				, index:     'created'
 				, direction: 'prev'
 				, limit:     50
 			});
 
-			return selector.each(entry => {
-
-				entry.body = '!!!';
+			return select.each(entry => {
 
 				if(!entry.edited && Math.floor(entry.created) % 2 === 0)
 				{
+					entry.body += ' Edited!!!';
 					entry.edited = true;
 				}
 
 				return database.update(entry);
-
-			}).then(results => {
-
-				return Promise.all(Object.values(results));
-
 			});
-
-		}).catch(error => {
-
-			console.error(error);
-
-		});
+		}).catch(error => console.error(error));
 	}
 
 	deleteLast500()
 	{
 		Database.open('event-log', 1).then(database => {
-
-			const selector = database.select({
+			const select = database.select({
 				store:       ['event-log']
 				, index:     'created'
 				, direction: 'prev'
-				, limit:     500
+				, limit:     50
 			});
 
-			return selector.each(entry => {
-
-				return database.delete(entry);
-
+			return select.each(entry => {
+				entry.body += ' -- DELETED!';
+				database.delete(entry)
 			});
-
-		}).catch(error => {
-
-			console.error(error);
-
-		});
+		}).catch(error => console.error(error));
 	}
 };

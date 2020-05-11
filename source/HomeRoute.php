@@ -34,15 +34,15 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 		header('Cache-Control: no-cache');
 		header('Content-Type: text/event-stream');
 
+		\SeanMorris\Ids\Log::info('Sending stream...');
+
 		while(ob_get_level())
 		{
 			ob_end_flush();
 			flush();
 		}
 
-		$events = [];
-
-		return new EventSource(function() use($events) {
+		return new EventSource(function() {
 
 			while(TRUE)
 			{
@@ -70,8 +70,6 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 						flush();
 					}
 				}
-
-				// usleep(1 * 1000 * 1000);
 			}
 		});
 	}

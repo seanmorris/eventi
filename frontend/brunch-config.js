@@ -6,7 +6,7 @@ exports.files = {
 exports.hooks  = {};
 
 exports.plugins = {
-  babel: {presets: ['es2015']},
+  babel: {presets: ['env']},
   raw: {
 	pattern: /\.(html)$/,
 	wrapper: content => `module.exports = ${JSON.stringify(content)}`

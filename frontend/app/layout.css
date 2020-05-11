@@ -26,3 +26,20 @@ ul li:nth-child(n+26),
 ol li:nth-child(n+26) {
 	display: none;
 }
+
+li {
+	display: flex;
+	flex-direction: row;
+}
+
+li > div {
+	text-transform: uppercase;
+}
+
+li input {
+	border: none;
+	flex-grow: 1;
+	font-family: monospace;
+	margin-left: 1em;
+	padding: 0px;
+}

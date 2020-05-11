@@ -14,9 +14,11 @@
   "devDependencies": {
     "auto-reload-brunch": "^2",
     "babel-brunch": "^6.1.1",
+    "babel-preset-env": "^1.7.0",
     "babel-preset-es2015": "^6",
-    "brunch-preval": "^0.0.0",
+    "babel-preset-stage-3": "^6.24.1",
     "brunch": "^2.10.17",
+    "brunch-preval": "^0.0.0",
     "clean-css-brunch": "^2",
     "raw-brunch": "^1.0.2",
     "uglify-es-brunch": "^1"

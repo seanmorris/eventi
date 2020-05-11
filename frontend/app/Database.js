@@ -1,54 +1,89 @@
 import { Bindable } from 'curvature/base/Bindable';
 
 const PrimaryKey = Symbol('PrimaryKey');
-
-const Store = Symbol('Store');
-const Fetch = Symbol('Each');
+const Connection = Symbol('Connection');
+const Instances  = Symbol('Instances');
+const Target = Symbol('Target');
+const Store  = Symbol('Store');
+const Fetch  = Symbol('Each');
+const Name   = Symbol('Name');
+const Bank   = Symbol('Bank');
 
 export class Database
 {
 	constructor(connection)
 	{
-		this.connection = connection;
-		this.bank       = {};
+		Object.defineProperty(this, Bank, {
+			value: {}
+		});
+
+		Object.defineProperty(this, Connection, {
+			value: connection
+		});
 	}
 
 	static open(dbName, version = 0)
 	{
-		if(this.instances[dbName])
+		if(this[Instances][dbName])
 		{
-			return Promise.resolve(this.instances[dbName]);
+			return Promise.resolve(this[Instances][dbName]);
 		}
 
 		return new Promise((accept, reject) => {
 			const request = indexedDB.open(dbName, version);
 
-			request.onerror = error => reject(error);
+			request.onerror = error => {
+
+				Database.dispatchEvent(new CustomEvent('readError', {detail: {
+					database:  this[Name]
+					, error:   error
+					, store:   storeName
+					, type:    'read'
+					, subType: 'select'
+				}}));
+
+				reject(error);
+			};
 
 			request.onsuccess = event => {
 
-				this.instances[dbName] = new this(event.target.result);
+				const instance = new this(event.target.result);
 
-				accept(this.instances[dbName]);
+				this[Instances][dbName] = instance
+
+				instance[Name] = dbName;
+
+				accept(instance);
+
+				accept(this[Instances][dbName]);
 
 			};
 
 			request.onupgradeneeded = event => {
 
-				const database = event.target.result;
+				const connection = event.target.result;
 
-				database.onerror = error => console.error(error);
+				connection.addEventListener('error', error => {
+					console.error(error)
+				});
 
-				this._version_0(database);
+				for(let v = event.oldVersion + 1; v <= version; v++)
+				{
+					this['_version_' + v](connection);
+				}
 
-				this.instances[dbName] = new this(database);
+				const instance = new this(connection);
 
-				accept(this.instances[dbName]);
+				this[Instances][dbName] = instance
+
+				instance[Name] = dbName;
+
+				accept(instance);
 			};
 		});
 	}
 
-	static _version_0(database)
+	static _version_1(database)
 	{
 		const eventLog = database.createObjectStore(
 			'event-log', {keyPath: 'id'}
@@ -58,49 +93,70 @@ export class Database
 		eventLog.createIndex('created', 'created', {unique: false});
 	}
 
-	select({store, index, direction = 'next', limit = 0, offset = 0})
+	select({store, index, range = null, direction = 'next', limit = 0, offset = 0})
 	{
-		const t = this.connection.transaction(store, "readonly");
+		const t = this[Connection].transaction(store, "readonly");
 		const s = t.objectStore(store);
-		const i = s.index(index);
+		const i = index
+			? s.index(index)
+			: s;
 
 		return {
-			each:   this[Fetch](i, direction, limit, offset)
-			, one:  this[Fetch](i, direction, 1, offset)
-			, then: c=>(this[Fetch](i, direction, limit, offset))(e=>e).then(c)
+			each:   this[Fetch](i, direction, range, limit, offset)
+			, one:  this[Fetch](i, direction, range, 1, offset)
+			, then: c=>(this[Fetch](i, direction, range, limit, offset))(e=>e).then(c)
 		};
 	}
 
 	insert(storeName)
 	{
 		return (record) => new Promise((accept, reject) => {
-			const trans = this.connection.transaction([storeName], "readwrite");
+			const trans = this[Connection].transaction([storeName], "readwrite");
 			const store = trans.objectStore(storeName);
 
-			if(!this.bank[storeName])
+			if(!this[Bank][storeName])
 			{
-				this.bank[storeName] = {};
+				this[Bank][storeName] = new WeakMap;
 			}
 
 			record = Bindable.makeBindable(record);
 
-			const bank = this.bank[storeName];
+			const bank = this[Bank][storeName];
 
 			const request = store.add(Object.assign({}, record));
 
-			request.onerror   = error => reject(error);
-			request.onsuccess = event => {
+			request.onerror = error => {
 
+				Database.dispatchEvent(new CustomEvent('writeError', {detail: {
+					database:  this[Name]
+					, record:  record
+					, store:   storeName
+					, type:    'write'
+					, subType: 'insert'
+				}}));
+
+				reject(error);
+			};
+
+			request.onsuccess = event => {
 				const pk = event.target.result;
 
 				bank[pk] = record;
 
-				console.log(pk, bank);
-
 				record[PrimaryKey] = Symbol.for(pk);
 				record[Store]      = storeName;
 
+				Database.dispatchEvent(new CustomEvent('write', {detail: {
+					database: this[Name]
+					, key:    Database.getPrimaryKey(record)
+					, store:  storeName
+					, type:    'write'
+					, subType: 'insert'
+				}}));
+
 				accept(record);
+
+				trans.commit();
 			};
 		});
 	}
@@ -115,13 +171,38 @@ export class Database
 		const storeName = record[Store];
 
 		return new Promise((accept, reject) => {
-			const trans = this.connection.transaction([storeName], "readwrite");
+			const trans = this[Connection].transaction([storeName], "readwrite");
 			const store = trans.objectStore(storeName);
 
 			const request = store.put(Object.assign({}, record));
 
-			request.onsuccess = database => accept(database);
-			request.onerror   = error    => reject(error);
+			request.onerror = error => {
+
+				Database.dispatchEvent(new CustomEvent('writeError', {detail: {
+					database:  this[Name]
+					, key:    Database.getPrimaryKey(record)
+					, store:   storeName
+					, type:    'write'
+					, subType: 'update'
+				}}));
+
+				reject(error);
+			};
+
+			request.onsuccess = event => {
+
+				Database.dispatchEvent(new CustomEvent('write', {detail: {
+					database: this[Name]
+					, key:    Database.getPrimaryKey(record)
+					, store:  storeName
+					, type:    'write'
+					, subType: 'update'
+				}}));
+
+				accept(event);
+
+				trans.commit();
+			};
 		});
 	}
 
@@ -135,21 +216,46 @@ export class Database
 		const storeName = record[Store];
 
 		return new Promise((accept, reject) => {
-			const trans = this.connection.transaction([storeName], "readwrite");
+			const trans = this[Connection].transaction([storeName], "readwrite");
 			const store = trans.objectStore(storeName);
 
 			const request = store.delete(record[PrimaryKey].description);
 
-			request.onsuccess = database => accept(database);
-			request.onerror   = error    => reject(error);
+			request.onerror = error => {
+
+				Database.dispatchEvent(new CustomEvent('writeError', {detail: {
+					database: this[Name]
+					, key:    Database.getPrimaryKey(record)
+					, store:  storeName
+					, type:    'delete'
+					, subType: 'update'
+				}}));
+
+				reject(error);
+			};
+
+			request.onsuccess = event => {
+
+				Database.dispatchEvent(new CustomEvent('write', {detail: {
+					database: this[Name]
+					, key:    Database.getPrimaryKey(record)
+					, store:  storeName
+					, type:    'write'
+					, subType: 'delete'
+				}}));
+
+				accept(event);
+
+				trans.commit();
+			};
 		});
 	}
 
-	[Fetch](index, direction, limit, offset)
+	[Fetch](index, direction, range, limit, offset)
 	{
 		return callback => new Promise((accept, reject) => {
 
-			const request = index.openCursor(null, direction);
+			const request = index.openCursor(range, direction);
 			const results = {};
 			let i = 0;
 
@@ -174,18 +280,19 @@ export class Database
 
 				i++;
 
-				const source = cursor.source;
+				const source    = cursor.source;
+				const storeName = source.objectStore
+					? source.objectStore.name
+					: index.name;
 
-				if(!this.bank[source.objectStore.name])
+				if(!this[Bank][storeName])
 				{
-					this.bank[source.objectStore.name] = {};
+					this[Bank][storeName] = new WeakMap;
 				}
 
-				const bank   = this.bank[source.objectStore.name];
+				const bank   = this[Bank][storeName];
 				const value  = cursor.value;
 				const pk     = cursor.primaryKey;
-
-				console.log(pk, bank);
 
 				if(bank[pk])
 				{
@@ -194,10 +301,18 @@ export class Database
 				else
 				{
 					value[PrimaryKey] = Symbol.for(pk);
-					value[Store]      = source.objectStore.name;
+					value[Store]      = storeName;
 
 					bank[pk] = Bindable.makeBindable(value);
 				}
+
+				Database.dispatchEvent(new CustomEvent('read', {detail: {
+					database:  this[Name]
+					, record:  value
+					, store:   storeName
+					, type:    'read'
+					, subType: 'select'
+				}}));
 
 				results[pk] = callback(bank[pk]);
 
@@ -206,6 +321,26 @@ export class Database
 
 		});
 	}
+
+	static getPrimaryKey(record)
+	{
+		return record[PrimaryKey]
+			? record[PrimaryKey].description
+			: null;
+	}
 }
 
-Database.instances = [];
+Object.defineProperty(Database, Instances, {
+	value: []
+});
+
+Object.defineProperty(Database, Target, {
+	value: new EventTarget
+});
+
+for(const method in Database[Target])
+{
+	Object.defineProperty(Database, method, {
+		value: (...args) => Database[Target][method](...args)
+	});
+}
