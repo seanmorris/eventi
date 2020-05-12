@@ -13,13 +13,8 @@ export class Database
 {
 	constructor(connection)
 	{
-		Object.defineProperty(this, Bank, {
-			value: {}
-		});
-
-		Object.defineProperty(this, Connection, {
-			value: connection
-		});
+		Object.defineProperty(this, Connection, {value: connection});
+		Object.defineProperty(this, Bank,       {value: {}});
 	}
 
 	static open(dbName, version = 0)
@@ -33,7 +28,6 @@ export class Database
 			const request = indexedDB.open(dbName, version);
 
 			request.onerror = error => {
-
 				Database.dispatchEvent(new CustomEvent('readError', {detail: {
 					database:  this[Name]
 					, error:   error
@@ -46,21 +40,15 @@ export class Database
 			};
 
 			request.onsuccess = event => {
-
 				const instance = new this(event.target.result);
+				instance[Name] = dbName;
 
 				this[Instances][dbName] = instance
 
-				instance[Name] = dbName;
-
 				accept(instance);
-
-				accept(this[Instances][dbName]);
-
 			};
 
 			request.onupgradeneeded = event => {
-
 				const connection = event.target.result;
 
 				connection.addEventListener('error', error => {
@@ -73,10 +61,9 @@ export class Database
 				}
 
 				const instance = new this(connection);
+				instance[Name] = dbName;
 
 				this[Instances][dbName] = instance
-
-				instance[Name] = dbName;
 
 				accept(instance);
 			};
@@ -97,9 +84,7 @@ export class Database
 	{
 		const t = this[Connection].transaction(store, "readonly");
 		const s = t.objectStore(store);
-		const i = index
-			? s.index(index)
-			: s;
+		const i = index ? s.index(index) : s;
 
 		return {
 			each:   this[Fetch](i, direction, range, limit, offset)
@@ -111,22 +96,14 @@ export class Database
 	insert(storeName)
 	{
 		return (record) => new Promise((accept, reject) => {
-			const trans = this[Connection].transaction([storeName], "readwrite");
-			const store = trans.objectStore(storeName);
+			this[Bank][storeName] = this[Bank][storeName] || new WeakMap;
 
-			if(!this[Bank][storeName])
-			{
-				this[Bank][storeName] = new WeakMap;
-			}
-
-			record = Bindable.makeBindable(record);
-
-			const bank = this[Bank][storeName];
-
-			const request = store.add(Object.assign({}, record));
-
+			const trans     = this[Connection].transaction([storeName], "readwrite");
+			const store     = trans.objectStore(storeName);
+			record          = Bindable.makeBindable(record);
+			const bank      = this[Bank][storeName];
+			const request   = store.add(Object.assign({}, record));
 			request.onerror = error => {
-
 				Database.dispatchEvent(new CustomEvent('writeError', {detail: {
 					database:  this[Name]
 					, record:  record
@@ -139,10 +116,8 @@ export class Database
 			};
 
 			request.onsuccess = event => {
-				const pk = event.target.result;
-
-				bank[pk] = record;
-
+				const pk           = event.target.result;
+				bank[pk]           = record;
 				record[PrimaryKey] = Symbol.for(pk);
 				record[Store]      = storeName;
 
@@ -154,9 +129,8 @@ export class Database
 					, subType: 'insert'
 				}}));
 
-				accept(record);
-
 				trans.commit();
+				accept(record);
 			};
 		});
 	}
@@ -168,16 +142,12 @@ export class Database
 			throw Error('Value provided is not a DB record!');
 		}
 
-		const storeName = record[Store];
-
 		return new Promise((accept, reject) => {
-			const trans = this[Connection].transaction([storeName], "readwrite");
-			const store = trans.objectStore(storeName);
-
-			const request = store.put(Object.assign({}, record));
-
+			const storeName = record[Store];
+			const trans     = this[Connection].transaction([storeName], "readwrite");
+			const store     = trans.objectStore(storeName);
+			const request   = store.put(Object.assign({}, record));
 			request.onerror = error => {
-
 				Database.dispatchEvent(new CustomEvent('writeError', {detail: {
 					database:  this[Name]
 					, key:    Database.getPrimaryKey(record)
@@ -190,7 +160,6 @@ export class Database
 			};
 
 			request.onsuccess = event => {
-
 				Database.dispatchEvent(new CustomEvent('write', {detail: {
 					database: this[Name]
 					, key:    Database.getPrimaryKey(record)
@@ -199,9 +168,8 @@ export class Database
 					, subType: 'update'
 				}}));
 
-				accept(event);
-
 				trans.commit();
+				accept(event);
 			};
 		});
 	}
@@ -213,16 +181,12 @@ export class Database
 			throw Error('Value provided is not a DB record!');
 		}
 
-		const storeName = record[Store];
-
 		return new Promise((accept, reject) => {
-			const trans = this[Connection].transaction([storeName], "readwrite");
-			const store = trans.objectStore(storeName);
-
-			const request = store.delete(record[PrimaryKey].description);
-
+			const storeName = record[Store];
+			const trans     = this[Connection].transaction([storeName], "readwrite");
+			const store     = trans.objectStore(storeName);
+			const request   = store.delete(record[PrimaryKey].description);
 			request.onerror = error => {
-
 				Database.dispatchEvent(new CustomEvent('writeError', {detail: {
 					database: this[Name]
 					, key:    Database.getPrimaryKey(record)
@@ -235,7 +199,6 @@ export class Database
 			};
 
 			request.onsuccess = event => {
-
 				Database.dispatchEvent(new CustomEvent('write', {detail: {
 					database: this[Name]
 					, key:    Database.getPrimaryKey(record)
@@ -244,9 +207,8 @@ export class Database
 					, subType: 'delete'
 				}}));
 
-				accept(event);
-
 				trans.commit();
+				accept(event);
 			};
 		});
 	}
@@ -254,28 +216,22 @@ export class Database
 	[Fetch](index, direction, range, limit, offset)
 	{
 		return callback => new Promise((accept, reject) => {
-
 			const request = index.openCursor(range, direction);
 			const results = {};
-			let i = 0;
+			let i         = 0;
 
 			request.addEventListener('success', event => {
 				const cursor = event.target.result;
 
 				if(!cursor || (limit && i - offset >= limit))
 				{
-					accept(results);
-					i++;
-
-					return;
+					return accept(results);
 				}
 
 				if(offset && offset > i)
 				{
-					cursor.continue();
 					i++;
-
-					return;
+					return cursor.continue();
 				}
 
 				i++;
@@ -285,10 +241,7 @@ export class Database
 					? source.objectStore.name
 					: index.name;
 
-				if(!this[Bank][storeName])
-				{
-					this[Bank][storeName] = new WeakMap;
-				}
+				this[Bank][storeName] = this[Bank][storeName] || new WeakMap;
 
 				const bank   = this[Bank][storeName];
 				const value  = cursor.value;
@@ -302,8 +255,7 @@ export class Database
 				{
 					value[PrimaryKey] = Symbol.for(pk);
 					value[Store]      = storeName;
-
-					bank[pk] = Bindable.makeBindable(value);
+					bank[pk]          = Bindable.makeBindable(value);
 				}
 
 				Database.dispatchEvent(new CustomEvent('read', {detail: {
@@ -318,7 +270,6 @@ export class Database
 
 				cursor.continue();
 			});
-
 		});
 	}
 
@@ -330,13 +281,8 @@ export class Database
 	}
 }
 
-Object.defineProperty(Database, Instances, {
-	value: []
-});
-
-Object.defineProperty(Database, Target, {
-	value: new EventTarget
-});
+Object.defineProperty(Database, Instances, {value: []});
+Object.defineProperty(Database, Target,    {value: new EventTarget});
 
 for(const method in Database[Target])
 {

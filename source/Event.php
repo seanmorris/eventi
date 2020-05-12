@@ -14,7 +14,7 @@ class Event
 	{
 		$format = "event: %s\ndata: %s\n";
 
-		if($this->id)
+		if(isset($this->id))
 		{
 			$format .= "id: %s\n";
 		}

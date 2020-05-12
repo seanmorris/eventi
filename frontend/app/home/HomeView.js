@@ -13,25 +13,26 @@ export class HomeView extends View
 		this.args.selected = [];
 		this.args.events   = [];
 
+		const worker = new Worker('worker.js');
+
 		Database.open('event-log', 1).then(database => {
-			const worker = new Worker('worker.js');
-
 			worker.addEventListener('message', event => {
-				if(event.data.subType == 'insert')
+				if(event.data.subType !== 'insert')
 				{
-					const store = event.data.store;
-					const range = IDBKeyRange.only(event.data.key);
-
-					database.select({store, range}).one(entry => {
-
-						this.args.events.push(entry);
-
-						while(this.args.events.length > 25)
-						{
-							this.args.events.shift();
-						}
-					});
+					return;
 				}
+
+				const store = event.data.store;
+				const range = IDBKeyRange.only(event.data.key);
+
+				database.select({store, range}).one(entry => {
+					this.args.events.push(entry);
+
+					while(this.args.events.length > 25)
+					{
+						this.args.events.shift();
+					}
+				});
 			});
 		});
 	}
@@ -43,25 +44,25 @@ export class HomeView extends View
 
 	loadLog()
 	{
-		Database.open('event-log', 1).then(database => {
+		return Database.open('event-log', 1).then(database => {
 			this.args.selected.splice(0, this.args.selected.length);
 
 			const select = database.select({
-				store:       ['event-log']
+				store:       'event-log'
 				, index:     'created'
 				, direction: 'prev'
 				, limit:     25
 			});
 
 			return select.each(entry => this.args.selected.push(entry));
-		}).catch(error => console.error(error))
+		});
 	}
 
 	editEven()
 	{
-		Database.open('event-log', 1).then(database => {
+		return Database.open('event-log', 1).then(database => {
 			const select = database.select({
-				store:       ['event-log']
+				store:       'event-log'
 				, index:     'created'
 				, direction: 'prev'
 				, limit:     50
@@ -77,14 +78,14 @@ export class HomeView extends View
 
 				return database.update(entry);
 			});
-		}).catch(error => console.error(error));
+		});
 	}
 
 	deleteLast500()
 	{
-		Database.open('event-log', 1).then(database => {
+		return Database.open('event-log', 1).then(database => {
 			const select = database.select({
-				store:       ['event-log']
+				store:       'event-log'
 				, index:     'created'
 				, direction: 'prev'
 				, limit:     50
@@ -94,6 +95,6 @@ export class HomeView extends View
 				entry.body += ' -- DELETED!';
 				database.delete(entry)
 			});
-		}).catch(error => console.error(error));
+		});
 	}
 };

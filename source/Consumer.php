@@ -3,6 +3,8 @@ namespace SeanMorris\Eventi;
 
 class Consumer
 {
+	protected static $resets = [];
+
 	public static function emit($topic, $groupId)
 	{
 		static::listen($topic, $groupId, function($message){
@@ -65,7 +67,7 @@ class Consumer
 	}
 
 	public static function rebalance(
-		\RdKafka\KafkaConsumer $kafka
+		\RdKafka\KafkaConsumer $consumer
 		, $error = NULL
 		, array $partitions = NULL
 	){
@@ -73,16 +75,34 @@ class Consumer
 		{
 			case RD_KAFKA_RESP_ERR__ASSIGN_PARTITIONS:
 				\SeanMorris\Ids\Log::debug('Assign: ', $partitions);
-				$kafka->assign($partitions);
+
+				foreach($partitions as $partition)
+				{
+					$topicName = $partition->getTopic();
+
+					if(array_key_exists($topicName, static::$resets))
+					{
+						$partition->setOffset( static::$resets[ $topicName ] );
+
+						unset(static::$resets[ $topicName ]);
+					}
+				}
+
+				$consumer->assign($partitions);
 				break;
 
 			case RD_KAFKA_RESP_ERR__REVOKE_PARTITIONS:
 				\SeanMorris\Ids\Log::debug('Revoke: ', $partitions);
-				$kafka->assign(NULL);
+				$consumer->assign(NULL);
 				break;
 
 			default:
 				throw new \Exception($error);
 	    }
+	}
+
+	public static function reset($topicName, $newOffset)
+	{
+		static::$resets[ $topicName ] = $newOffset;
 	}
 }

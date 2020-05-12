@@ -42,11 +42,20 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 			flush();
 		}
 
+		if($lastEvent = intval($router->request()->headers('Last-Event-ID')))
+		{
+			$newOffset = $lastEvent + 1;
+
+			\SeanMorris\Ids\Log::error('Setting offset', $newOffset);
+
+			KayVeeConsumer::reset('test', $newOffset);
+		}
+
 		return new EventSource(function() {
 
 			while(TRUE)
 			{
-				\SeanMorris\Ids\Log::debug('tick...', connection_aborted());
+				\SeanMorris\Ids\Log::debug('tick...');
 
 				if(connection_aborted())
 				{
@@ -62,7 +71,7 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 
 					ob_start();
 
-					yield new Event($event->payload, $event->offset);
+					yield new Event($event->payload, (int) $event->offset);
 
 					while(ob_get_level())
 					{

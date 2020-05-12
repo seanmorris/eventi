@@ -49,6 +49,22 @@ services:
       file: base.yml
       service: zookeeper
 
+  schema-registry:
+    extends:
+      file: base.yml
+      service: schema-registry
+    depends_on:
+      - zookeeper
+      - kafka
+
+  ksql-server:
+    extends:
+      file: base.yml
+      service: ksql-server
+    depends_on:
+      - kafka
+      - schema-registry
+
   brunch:
     extends:
       file: base.yml

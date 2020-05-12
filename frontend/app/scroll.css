@@ -1,5 +1,5 @@
 *::-webkit-scrollbar {
-	width:  0.75em;
+	width:  1em;
 	height: 0em;
 }
 
@@ -16,7 +16,6 @@
 	background-clip: padding-box;
 	background-color: rgba(0,0,0,0.25);
 	position: absolute;
-	/*z-index:          1000;*/
 }
 
 *::-webkit-scrollbar-thumb:hover {
