@@ -11,7 +11,7 @@ class Consumer
 			switch ($message->err)
 			{
 				case RD_KAFKA_RESP_ERR_NO_ERROR:
-					\SeanMorris\Ids\Log::debug($message);
+					print $message->payload . PHP_EOL;
 					break;
 
 				case RD_KAFKA_RESP_ERR__PARTITION_EOF:
@@ -52,7 +52,7 @@ class Consumer
 			$consumer->subscribe([$topic]);
 		}
 
-		return $consumer->consume(120*1000);
+		return $consumer->consume(500);
 		// $consumer->commit($message);
 	}
 

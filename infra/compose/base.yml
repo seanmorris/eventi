@@ -27,7 +27,7 @@ services:
     image:   ${REPO}/${PROJECT}.centralconsumer:${TAG}
     user:    ${D_UID}:${D_GID}
     restart: always
-    command: ['@SeanMorris\Eventi\KayVeeProducer::emit', '1', '750']
+    command: ['@SeanMorris\Eventi\KayVeeProducer::emit', '1', '1000']
     env_file:
       - ${MAIN_DLT}
       - ${MAIN_ENV}
@@ -86,6 +86,7 @@ services:
     ports:
       - '8088:8088'
     environment:
+      KSQL_KSQL_STREAMS_COMMIT_INTERVAL_MS: 250
       KSQL_BOOTSTRAP_SERVERS: kafka:9092
       KSQL_LISTENERS: http://0.0.0.0:8088
       KSQL_KSQL_SCHEMA_REGISTRY_URL: http://schema-registry:8081

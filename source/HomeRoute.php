@@ -19,7 +19,7 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 		$message  = json_encode((object)[
 			'id'        => uuid_create()
 			, 'created' => sprintf('%0.8f', microtime(true))
-			, 'body'    => 'User generaged message.'
+			, 'body'    => 'User generated message.'
 		]);
 
 		$topic->produce(RD_KAFKA_PARTITION_UA, 0, $message);
