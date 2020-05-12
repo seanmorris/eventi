@@ -1,0 +1,67 @@
+streams:
+
+  event_stream: >-
+    CREATE STREAM `event_stream` (
+      `id` VARCHAR,
+      `body` VARCHAR
+      `created` DOUBLE,
+    ) WITH (
+      value_format='json',
+      kafka_topic='test',
+      partitions=1,
+      key='`id`'
+    );
+
+tables:
+
+  event_table: >-
+    CREATE TABLE `event_table` WITH (
+      TIMESTAMP='`timestamp`',
+      TIMESTAMP_FORMAT='yyyy-MM-dd HH:mm:ss.SSS'
+    ) AS SELECT
+      `event_stream`.`id` `id`,
+      LATEST_BY_OFFSET(`event_stream`.`body`) `body`,
+      TIMESTAMPTOSTRING( (CAST(MIN(`created`)*1000 AS BIGINT)), 'yyyy-MM-dd HH:mm:ss.SSS') `timestamp`,
+      COUNT(*) `count`
+    FROM
+      `event_stream`
+    GROUP BY
+      `event_stream`.`created`,
+      `event_stream`.`id`;
+
+# input:
+
+#   event_stream:
+#     columns:
+#       id: VARCHAR
+#       created: DOUBLE
+#       body: VARCHAR
+#     with:
+#       key: id
+#       partitions: 1
+#       kafka_topic: test
+#       value_format: json
+
+# streams:
+# tables:
+
+#   event_table:
+#     from:
+#       events: `event_stream`
+#     input:
+#       id: `events`.`id`
+#       body: `events`.`body`
+#       created: `events`.`created`
+#       count: count(`events`.`id`)
+#     join:
+#     window:
+#     where:
+#     group by:
+#       - `events`.`id`
+#       - `events`.`body`
+#       - `events`.`created`
+#     having:
+#     with:
+#       REPLICAS: 1
+#       PARTITIONS: 1
+#       KAFKA_TOPIC: event_table

@@ -6,8 +6,6 @@ class KsqlConfig
 	{
 		$config = (object) yaml_parse_file('/app/data/global/ksql.yml');
 
-		var_dump($config);
-
 		if(isset($config->streams))
 		{
 			foreach($config->streams as $name => $streamCreate)
@@ -43,8 +41,6 @@ class KsqlConfig
 				'Content-type: application/x-www-form-urlencoded'
 			]
 		]]);
-
-		var_dump($ctx);
 
 		$handle = fopen('http://ksql-server:8088/ksql', 'rb', FALSE, $context);
 		$result = stream_get_contents($handle);

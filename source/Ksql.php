@@ -5,10 +5,9 @@ class Ksql
 	public static function streamUserMessages()
 	{
 		return static::stream(<<<EOQ
-			SELECT *
-			FROM   events
+			SELECT ROWTIME, *
+			FROM  `event_table`
 			WHERE `body` = 'User generated message.'
-			PARTITION BY `id`
 			EMIT CHANGES
 			EOQ
 			, 'latest'
@@ -18,10 +17,9 @@ class Ksql
 	public static function streamServerMessages()
 	{
 		return static::stream(<<<EOQ
-			SELECT *
-			FROM   events
+			SELECT ROWTIME, *
+			FROM  `event_table`
 			WHERE `body` = 'Server generated message.'
-			PARTITION BY `id`
 			EMIT CHANGES
 			EOQ
 			, 'latest'
@@ -31,12 +29,11 @@ class Ksql
 	public static function queryUserMessages()
 	{
 		return static::stream(<<<EOQ
-			SELECT *
-			FROM   events
+			SELECT ROWTIME, *
+			FROM  `event_table`
 			WHERE `body` = 'User generated message.'
-			PARTITION BY `id`
 			EMIT CHANGES
-			LIMIT 1
+			LIMIT 1;
 			EOQ
 			, 'latest'
 		);
@@ -45,12 +42,11 @@ class Ksql
 	public static function queryServerMessages()
 	{
 		return static::query(<<<EOQ
-			SELECT *
-			FROM   events
+			SELECT ROWTIME, *
+			FROM  `event_table`
 			WHERE `body` = 'Server generated message.'
-			PARTITION BY `id`
 			EMIT CHANGES
-			LIMIT 1
+			LIMIT 1;
 			EOQ
 			, 'latest'
 		);
@@ -59,15 +55,18 @@ class Ksql
 	public static function openRequest($path, $content)
 	{
 		$context = stream_context_create(['http' => [
-			'content'  => $content
-			, 'method' => 'POST'
-			, 'header' => [
+			'ignore_errors' => true
+			, 'content'     => $content
+			, 'method'      => 'POST'
+			, 'header'      => [
 				'Content-Type: application/json; charset=utf-8'
 				, 'Accept: application/vnd.ksql.v1+json'
 			]
 		]]);
 
-		return fopen('http://ksql-server:8088/' . $path, 'r', FALSE, $context);
+		$handle = fopen('http://ksql-server:8088/' . $path, 'r', FALSE, $context);
+
+		return $handle;
 	}
 
 	public static function query($string, $reset = 'latest')
