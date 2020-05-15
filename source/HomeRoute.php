@@ -64,6 +64,11 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 
 				while($event = KayVeeConsumer::wait('test', 'web-test-group'))
 				{
+					if(!isset($event->payload))
+					{
+						continue;
+					}
+
 					if($event->payload === 'Broker: No more messages')
 					{
 						continue;
@@ -81,6 +86,15 @@ class HomeRoute implements \SeanMorris\Ids\Routable
 				}
 			}
 		});
+	}
+
+	public function session($router)
+	{
+		$session = \SeanMorris\Ids\Session::local();
+
+		\SeanMorris\Ids\Log::error($session);
+
+		return 'wow';
 	}
 
 	public function _notFound($router)
