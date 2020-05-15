@@ -179,54 +179,21 @@ class Ksql
 
 	public function table($tableName)
 	{
-		[$response] = static::describe($tableName);
-
-		if(!isset($response->sourceDescription))
-		{
-			return new \SeanMorris\Eventi\Ksql\Error(
-				$this, $response
-			);
-		}
-
 		return new \SeanMorris\Eventi\Ksql\Table(
-			$this, $response->sourceDescription
+			$this, $this->describeTable($tableName)
 		);
-
-		return $response;
 	}
 
 	public function stream($tableName)
 	{
-		[$response] = static::describe($tableName);
-
-		if(!isset($response->sourceDescription))
-		{
-			return new \SeanMorris\Eventi\Ksql\Error(
-				$this, $response
-			);
-		}
-
 		return new \SeanMorris\Eventi\Ksql\Stream(
-			$this, $response->sourceDescription
+			$this, $this->describeTable($tableName)
 		);
-
-		return $response;
 	}
 
 	public function query($queryId)
 	{
-		[$response] = static::explain($queryId);
-
-		if(!isset($response->queryDescription))
-		{
-			return new \SeanMorris\Eventi\Ksql\Error(
-				$this, $response
-			);
-		}
-
-		return new \SeanMorris\Eventi\Ksql\Query(
-			$this, $response->queryDescription
-		);
+		return $this->explain($queryId);
 	}
 
 	public static function escapeId($identifier)
@@ -333,11 +300,59 @@ class Ksql
 		);
 	}
 
-	public function terminateQuery($queryId)
+	public function describeStream($resourceName)
+	{
+		return $this->describeSource('STREAM', $resourceName);
+	}
+
+	public function describeTable($resourceName)
+	{
+		return $this->describeSource('TABLE', $resourceName);
+	}
+
+	public function describeSource($sourceType, $resourceName)
+	{
+		[$response] = static::runQuery(sprintf(
+			'DESCRIBE %s'
+			, static::escapeId($resourceName)
+		));
+
+		if($response->error_code ?? 0)
+		{
+			return new \SeanMorris\Eventi\Ksql\Error(
+				$this, $response
+			);
+		}
+
+		return $response->sourceDescription;
+	}
+
+	public function explain($queryId)
+	{
+		[$response] = static::runQuery(sprintf(
+			'EXPLAIN %s'
+			, static::escapeId($queryId)
+		));
+
+		if($response->error_code ?? 0)
+		{
+			return new \SeanMorris\Eventi\Ksql\Error(
+				$this, $response
+			);
+		}
+
+		$response->commandStatus->command = $response->commandId;
+
+		return new \SeanMorris\Eventi\Ksql\CommandStatus(
+			$this, $response->commandStatus
+		);
+	}
+
+	public function terminate($queryId)
 	{
 		[$response] = static::runQuery(sprintf(
 			'TERMINATE %s'
-			, $queryId
+			, static::escapeId($queryId)
 		));
 
 		if($response->error_code ?? 0)
