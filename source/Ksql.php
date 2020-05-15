@@ -2,48 +2,57 @@
 namespace SeanMorris\Eventi;
 class Ksql
 {
+	public const HTTP_OK = 200;
 	public static function test()
 	{
 		$ksql = new static('http://ksql-server:8088/');
 
 		return [
 
-			NULL
+			$ksql->info()
 
 			// , 'streams'  => $ksql->streams()
 			// , 'stream' => $ksql->stream('EVENTS')->toStruct()
 
 			// , 'tables'  => $ksql->tables(1)
-			// , 'abc'   => $ksql->table('abc')->drop()
-			// , 'xyz'   => $ksql->table('xyz')->drop()
+			, 'abc'   => $ksql->dropStream('abc')->toStruct()
+			, 'xyz'   => $ksql->dropTable('xyz')->toStruct()
 
 			// // , 'queries' => $ksql->queries(1)
 			// // , 'query'   => $ksql->query($qid)->toStruct()
 
-			// , 'createStream' => $ksql->createStream(
-			// 	'abc'
-			// 	, ['id' => 'STRING']
-			// 	, [
-			// 		'key' => '`id`'
-			// 		, 'KAFKA_TOPIC'  => 'test'
-			// 		, 'VALUE_FORMAT' => 'JSON'
-			// 	]
-			// )->toStruct()
+			, 'statusStreamDrop' => $ksql
+				->statusSource('STREAM', 'abc', 'drop')
+				->toStruct()
 
-			// , 'createTable' => $ksql->createTable(
-			// 	'xyz'
-			// 	, ['id' => 'STRING']
-			// 	, [
-			// 		'key' => '`id`'
-			// 		, 'KAFKA_TOPIC'  => 'test'
-			// 		, 'VALUE_FORMAT' => 'JSON'
-			// 	]
-			// )->toStruct()
+			, 'statusTableDrop' => $ksql
+				->statusSource('TABLE', 'xyz', 'drop')
+				->toStruct()
 
-			, 'statusS' => $ksql
+			, 'createStream' => $ksql->createStream('abc'
+				, ['id' => 'STRING']
+				, [
+					'key' => '`id`'
+					, 'KAFKA_TOPIC'  => 'test'
+					, 'VALUE_FORMAT' => 'JSON'
+				]
+			)->toStruct()
+
+			, 'createTable' => $ksql->createTable(
+				'xyz'
+				, ['id' => 'STRING']
+				, [
+					'key' => '`id`'
+					, 'KAFKA_TOPIC'  => 'test'
+					, 'VALUE_FORMAT' => 'JSON'
+				]
+			)->toStruct()
+
+			, 'statusStreamCreate' => $ksql
 				->statusSource('STREAM', 'abc', 'create')
 				->toStruct()
-			, 'statusT' => $ksql
+
+			, 'statusTableCreate' => $ksql
 				->statusSource('TABLE', 'xyz', 'create')
 				->toStruct()
 		];
@@ -54,6 +63,26 @@ class Ksql
 	public function __construct($endpoint)
 	{
 		$this->endpoint = $endpoint;
+	}
+
+	public function info()
+	{
+		$response = static::get('info');
+
+		$response = json_decode(stream_get_contents($response->stream));
+
+		if($response->error_code ?? 0)
+		{
+			return new \SeanMorris\Eventi\Ksql\Error(
+				$this, $response
+			);
+		}
+
+		return $response;
+
+		// return new \SeanMorris\Eventi\Ksql\Info(
+		// 	$this, $response
+		// );
 	}
 
 	public function properties()
@@ -265,6 +294,31 @@ class Ksql
 			);
 		}
 
+		$response->commandStatus->command = $response->commandId;
+
+		return new \SeanMorris\Eventi\Ksql\CommandStatus(
+			$this, $response->commandStatus
+		);
+	}
+
+	public function dropStream($resourceName)
+	{
+		return $this->dropSource('STREAM', $resourceName);
+	}
+
+	public function dropTable($resourceName)
+	{
+		return $this->dropSource('TABLE', $resourceName);
+	}
+
+	public function dropSource($sourceType, $resourceName)
+	{
+		[$response] = static::runQuery(sprintf(
+			'DROP %s %s'
+			, $sourceType
+			, static::escapeId($resourceName)
+		));
+
 		if($response->error_code ?? 0)
 		{
 			return new \SeanMorris\Eventi\Ksql\Error(
@@ -272,8 +326,31 @@ class Ksql
 			);
 		}
 
-		return new \SeanMorris\Eventi\Ksql\Status(
-			$this, $response->status
+		$response->commandStatus->command = $response->commandId;
+
+		return new \SeanMorris\Eventi\Ksql\CommandStatus(
+			$this, $response->commandStatus
+		);
+	}
+
+	public function terminateQuery($queryId)
+	{
+		[$response] = static::runQuery(sprintf(
+			'TERMINATE %s'
+			, $queryId
+		));
+
+		if($response->error_code ?? 0)
+		{
+			return new \SeanMorris\Eventi\Ksql\Error(
+				$this, $response
+			);
+		}
+
+		$response->commandStatus->command = $response->commandId;
+
+		return new \SeanMorris\Eventi\Ksql\CommandStatus(
+			$this, $response->commandStatus
 		);
 	}
 
@@ -288,163 +365,16 @@ class Ksql
 
 		$response = json_decode(stream_get_contents($response->stream));
 
+		if($response->error_code ?? 0)
+		{
+			return new \SeanMorris\Eventi\Ksql\Error(
+				$this, $response
+			);
+		}
+
 		return new \SeanMorris\Eventi\Ksql\Status(
 			$this, $response
 		);
-	}
-
-
-
-	public static function streamUserMessages($limit = NULL)
-	{
-		return static::streamQuery(<<<EOQ
-			SELECT ROWTIME, *
-			FROM  `event_table`
-			WHERE `body` = 'User generated message.'
-			EMIT CHANGES
-			EOQ
-			, 'latest'
-		);
-	}
-
-	public static function streamMessages($limit = NULL)
-	{
-		return static::streamQuery(<<<EOQ
-			SELECT ROWTIME, *
-			FROM  `event_table`
-			EMIT CHANGES
-			EOQ
-			, 'latest'
-		);
-	}
-
-	public static function streamServerMessages()
-	{
-		return static::streamQuery(<<<EOQ
-			SELECT ROWTIME, *
-			FROM  `event_table`
-			WHERE `body` = 'Server generated message.'
-			EMIT CHANGES
-			EOQ
-			, 'latest'
-		);
-	}
-
-	public static function queryUserMessages()
-	{
-		return static::streamQuery(<<<EOQ
-			SELECT ROWTIME, *
-			FROM  `event_table`
-			WHERE `body` = 'User generated message.'
-			EMIT CHANGES
-			EOQ
-			, 'latest'
-		);
-	}
-
-	public static function queryServerMessages()
-	{
-		return static::streamQuery(<<<EOQ
-			SELECT ROWTIME, *
-			FROM  `event_table`
-			WHERE `body` = 'Server generated message.'
-			EMIT CHANGES
-			EOQ
-			, 'latest'
-		);
-	}
-
-	public static function run(...$input)
-	{
-		if($input[0] === 'SELECT')
-		{
-			return static::stream(implode(' ', $input));
-		}
-
-		return static::runQuery(implode(' ', $input));
-	}
-
-	public static function describe($resourceName)
-	{
-		$resourceName = str_replace('`', '``', $resourceName);
-
-		return static::runQuery(sprintf('DESCRIBE EXTENDED `%s`', $resourceName));
-	}
-
-	public static function explain($queryId)
-	{
-		$resourceName = str_replace('`', '``', $queryId);
-
-		return static::runQuery(sprintf('EXPLAIN `%s`', $queryId));
-	}
-
-	public static function info()
-	{
-		$response = static::get('info');
-
-		\SeanMorris\Ids\Log::debug('Waiting...');
-
-		return json_decode(stream_get_contents($response->stream));
-	}
-
-	public static function get($path, $content = NULL)
-	{
-		return static::openRequest('GET', $path, $content);
-	}
-
-	public static function post($path, $content = NULL)
-	{
-		return static::openRequest('POST', $path, $content);
-	}
-
-	public static function openRequest($method, $path, $content = NULL)
-	{
-		$context = stream_context_create(['http' => [
-			'ignore_errors' => true
-			, 'content'     => $content
-			, 'method'      => $method
-			, 'header'      => [
-				'Content-Type: application/json; charset=utf-8'
-				, 'Accept: application/vnd.ksql.v1+json'
-			]
-		]]);
-
-		$handle = fopen('http://ksql-server:8088/' . $path, 'r', FALSE, $context);
-
-		return array_reduce($http_response_header, function($carry, $header){
-
-			if(stripos($header, 'HTTP/') === 0)
-			{
-				$header = strtoupper($header);
-
-				[$httpVer, $code, $status] = sscanf(
-					$header, 'HTTP/%s %s %[ -~]'
-				);
-
-				$spacePos = strpos($header, ' ');
-
-				$carry->code   = (int) $code;
-				$carry->http   = $httpVer;
-				$carry->status = substr($header, 1 + $spacePos);
-			}
-
-			if(($split = stripos($header, ':')) !== FALSE)
-			{
-				$key   = substr($header, 0, $split);
-				$value = substr($header, 1 + $split);
-
-				$carry->header->$key = ltrim($value);
-			}
-
-			return $carry;
-
-		}, (object) [
-			'http'     => 0
-			, 'code'   => 0
-			, 'status' => 'ERROR'
-			, 'header' => (object) []
-			, 'stream' => $handle
-		]);
 	}
 
 	public static function runQuery(...$strings)
@@ -483,8 +413,6 @@ class Ksql
 
 		return $response;
 	}
-
-	public const HTTP_OK = 200;
 
 	public static function streamQuery($string, $reset = 'latest')
 	{
@@ -595,5 +523,65 @@ class Ksql
 		}
 
 		fclose($response->stream);
+	}
+
+	public static function get($path, $content = NULL)
+	{
+		return static::openRequest('GET', $path, $content);
+	}
+
+	public static function post($path, $content = NULL)
+	{
+		return static::openRequest('POST', $path, $content);
+	}
+
+	public static function openRequest($method, $path, $content = NULL)
+	{
+		$context = stream_context_create(['http' => [
+			'ignore_errors' => true
+			, 'content'     => $content
+			, 'method'      => $method
+			, 'header'      => [
+				'Content-Type: application/json; charset=utf-8'
+				, 'Accept: application/vnd.ksql.v1+json'
+			]
+		]]);
+
+		$handle = fopen('http://ksql-server:8088/' . $path, 'r', FALSE, $context);
+
+		return array_reduce($http_response_header, function($carry, $header){
+
+			if(stripos($header, 'HTTP/') === 0)
+			{
+				$header = strtoupper($header);
+
+				[$httpVer, $code, $status] = sscanf(
+					$header, 'HTTP/%s %s %[ -~]'
+				);
+
+				$spacePos = strpos($header, ' ');
+
+				$carry->code   = (int) $code;
+				$carry->http   = $httpVer;
+				$carry->status = substr($header, 1 + $spacePos);
+			}
+
+			if(($split = stripos($header, ':')) !== FALSE)
+			{
+				$key   = substr($header, 0, $split);
+				$value = substr($header, 1 + $split);
+
+				$carry->header->$key = ltrim($value);
+			}
+
+			return $carry;
+
+		}, (object) [
+			'http'     => 0
+			, 'code'   => 0
+			, 'status' => 'ERROR'
+			, 'header' => (object) []
+			, 'stream' => $handle
+		]);
 	}
 }

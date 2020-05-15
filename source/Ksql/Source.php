@@ -37,6 +37,10 @@ abstract class Source extends Entity
 			);
 		}
 
-		return $response;
+		$response->commandStatus->commandId = $response->commandId;
+
+		return new \SeanMorris\Eventi\Ksql\CommandStatus(
+			$this, $response->commandStatus
+		);
 	}
 }
